@@ -105,9 +105,33 @@ jp-style-optimizer 是一个运行在 [Claude Code](https://docs.anthropic.com/e
 # macOS / Linux
 git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git ~/.claude/skills/jp-style-optimizer
 
-# Windows
+# Windows (CMD)
 git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git %USERPROFILE%\.claude\skills\jp-style-optimizer
+
+# Windows (PowerShell)
+git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git "$env:USERPROFILE\.claude\skills\jp-style-optimizer"
+
+# Windows (Git Bash)
+git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git ~/. claude/skills/jp-style-optimizer
 ```
+
+或者直接复制文件（无需 git）：
+
+```bash
+# 1. 下载并解压
+curl -L https://github.com/xiajing0522-creator/jp-style-optimizer/archive/refs/heads/master.zip -o jp-style-optimizer.zip
+unzip jp-style-optimizer.zip
+
+# 2. 移动到技能目录
+# macOS / Linux
+mkdir -p ~/.claude/skills && mv jp-style-optimizer-master ~/.claude/skills/jp-style-optimizer
+
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills" | Out-Null
+Move-Item jp-style-optimizer-master "$env:USERPROFILE\.claude\skills\jp-style-optimizer"
+```
+
+> **技能目录说明**：Claude Code 会自动扫描 `~/.claude/skills/` 下的子目录，读取其中的 `SKILL.md` 作为技能定义。安装后无需额外配置，重启 Claude Code 即可使用。
 
 ### 调用方式
 
