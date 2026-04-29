@@ -103,10 +103,10 @@ jp-style-optimizer 是一个运行在 [Claude Code](https://docs.anthropic.com/e
 
 ```bash
 # macOS / Linux
-git clone https://github.com/<your-username>/jp-style-optimizer.git ~/.claude/skills/jp-style-optimizer
+git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git ~/.claude/skills/jp-style-optimizer
 
 # Windows
-git clone https://github.com/<your-username>/jp-style-optimizer.git %USERPROFILE%\.claude\skills\jp-style-optimizer
+git clone https://github.com/xiajing0522-creator/jp-style-optimizer.git %USERPROFILE%\.claude\skills\jp-style-optimizer
 ```
 
 ### 调用方式
