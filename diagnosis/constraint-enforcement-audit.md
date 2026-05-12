@@ -2,50 +2,74 @@
 name: constraint-enforcement-audit
 type: diagnosis
 skill: jp-style-optimizer
+version_assessed: 5.2.0
+date: 2026-04-29
+target_version: 6.0.0
 ---
 
-> **Archived**: This diagnosis was conducted pre-v4.0.0. The critical findings (broken Python script workflow, {{PROJECT_DIR}} unresolved, 0% constraint enforcement) were all resolved in v4.0.0–v4.1.0. Retained for historical reference only — do not use as current state assessment. See CHANGELOG.md v4.0.0+ entries for resolution details.
+# Constraint Enforcement Audit (v6.0.0 Boost)
 
-# Constraint Enforcement Audit
+## Red Line Classification (v5.2.0: RL-1 through RL-12)
 
-## Red Line Classification
-
-| Red Line | Stakes | Mechanically Checkable? | Current Axis | Do Mechanism? | Enforcement |
-|----------|--------|------------------------|--------------|---------------|-------------|
-| RL-1: No term substitution | HIGH — financial terms are legally significant | Yes — scan output for each input term | Think only | None | Think-only |
-| RL-2: No information injection | Medium — adds claims not in source | Partially — hard to scan comprehensively | Think only | None | Think-only |
-| RL-3: No subjective in report style | High — breaks report register entirely | Yes — grep for 思います\|感じます\|と思う\|と感じる | Think only | None (broken script) | Think-only |
-| RL-4: SNS ≤140 chars | High — violates core format | Yes — count characters | Think only | None (broken script) | Think-only |
-| RL-5: No です/ます in formal | High — breaks formal register | Yes — grep for です\|ます | Think only | None (broken script) | Think-only |
-| RL-6: Non-Japanese input deflection | Medium — sends to wrong skill | Yes — detect input language | Think only | None | Think-only |
+| Red Line | Stakes | Mechanically Checkable | Current Axis | Do Mechanism | Enforcement |
+|----------|--------|------------------------|--------------|--------------|-------------|
+| RL-1: Term lock | HIGH — financial terms legally significant | Yes — scan output for each listed term | **Think+Do** | Step 2 term list → Step 5 verification against list | ✓ Do |
+| RL-2: Information injection | HIGH — adds claims not in source | Partial — scan for numbers/named entities/causal claims | **Think+Do** | Step 5 explicit scan (a) numbers (b) named entities (c) causal claims; flag with ⚠ RL-2 | ✓ Do |
+| RL-3: No subjective in 情報分析 | HIGH — breaks register | Yes — grep for 思います|感じます patterns | **Think+Do** | Step 5 explicit grep; state「主観表現なし: ✓」 | ✓ Do |
+| RL-4: Scene hard char limits | HIGH — platform hard limits | Yes — count characters per field | **Think+Do** | Step 5 per-field count; RL-4 table enforced; compression rules if over | ✓ Do |
+| RL-5: Disclosure register purity | HIGH — breaks formal register | Yes — grep for です|ます | **Think+Do** | Step 5 explicit scan; state「です/ますなし: 確認済み」 | ✓ Do |
+| RL-6: Translation deflection | Medium | Yes — detect input language | **Think+Do** | Step 1 language gate; returns delegation message | ✓ Do |
+| RL-7: No double negatives | Medium | Yes — pattern match 〜ないわけではない | **Think+Do** | Step 5 explicit scan; state finding | ✓ Do |
+| RL-8: No noun stacking | Medium | Yes — count consecutive nouns | **Think+Do** | Step 5 explicit scan; state finding | ✓ Do |
+| RL-9: Unattributed numbers in 情報分析 | HIGH — report credibility | Yes — scan for bare numbers without attribution | **Think+Do** | Step 5 explicit; state「要出典: [数値]」or 「未出典数値なし: ✓」 | ✓ Do |
+| RL-10: No passive stacking | Low | Yes — count 〜される|〜られる per sentence | **Think+Do** | Step 5 explicit scan; state finding | ✓ Do |
+| RL-11: No register mixing | HIGH — register purity | Partial — 4 pattern checks | **Think+Do** | Step 5 explicit scan; state「文体統一: ✓」; topic exceptions documented | ✓ Do |
+| RL-12: Marketing CTA | HIGH — conversion loss | Yes — scan for action verb | **Think+Do** | Step 5 explicit; state「CTA確認: ✓」or flag + revise | ✓ Do |
 
 ## Enforcement Ratio
 
-**Current**: 0/6 = **0%** (target: ≥ 30%)
+**Current v5.2.0**: 12/12 = **100%** (all constraints have Do mechanisms via Step 5 inline verification)
 
-The post-execution verification steps in the current workflow APPEAR to add Do-axis enforcement (they specify grep patterns), but they are coupled to a Python script that doesn't exist. In practice, verification never runs — all constraints are purely Think-only.
+This is a significant improvement from the pre-v4.0.0 state (0/6 = 0%). All 12 constraints are enforced via the explicit inline verification block in Step 5.
 
-## Top 3 Upgrade Candidates
+## Top 3 Highest-Stakes Think-Only Constraints
 
-### 1. RL-1: Term Substitution (Highest Stakes)
-**Why high-stakes**: Financial terms (当期純利益, 有価証券報告書, 信用取引) have legal and regulatory meanings. Substitution with a synonym corrupts the document's legal standing.
-**Do mechanism**: Add an explicit term-extraction step *before* transformation. Output a term lock list. After transformation, scan output for each listed term. This creates an artifact gate — the transformation step cannot proceed without a term list, and the verification step has an explicit list to check against.
+All current constraints have Do mechanisms, but the following have **partial Do enforcement** (the Do check can produce false negatives):
 
-### 2. RL-4: SNS Length (Easiest to Mechanically Enforce)
-**Why high-stakes**: Platform hard limit. A 141-character SNS post cannot be published.
-**Do mechanism**: Inline count gate. After producing SNS output, count characters and state the count explicitly (e.g., "出力: 87文字"). If over 140, apply compression rules from style-guide.md before outputting. The count must appear in the output — not just a mental check.
+1. **RL-2 Information injection** — The scan covers (a) numbers, (b) named entities, (c) causal claims. However, subtle injection (e.g., reframing that changes implication without adding explicit claims) is Think-only. Highest stakes: legal documents and report content.
 
-### 3. RL-5: Formal Register Purity (High-Frequency Error)
-**Why high-stakes**: です/ます leakage is the most common register mixing error and immediately visible to any Japanese reader.
-**Do mechanism**: Inline verification gate. After producing formal output, explicitly scan for です/ます and list findings. State "です/ますなし: 確認済み" in the verification block. If found, revise before outputting.
+2. **RL-11 Register mixing (pattern 4: tone markers)** — The check for 「！」in press/legal/report/support is mechanical. However, more subtle register mixing (e.g., marketing-style enthusiasm words in report output that don't trigger the explicit markers) remains Think-only.
 
-## Recommended New Red Lines (from domain research)
+3. **RL-1 Term lock** — The verification checks that listed terms appear in output, but cannot detect whether the term's grammatical role or contextual meaning has been distorted. The term 「当期純利益」could appear unchanged but be placed in a syntactically misleading position.
 
-From `diagnosis/domain-research.md`, 4 additional verifiable red lines were identified (Nikkei style anti-patterns applicable to all register styles):
+## v6.0.0 Constraint Updates Required
 
-| Proposed RL | Check Method |
-|-------------|-------------|
-| RL-7: No double negatives (二重否定) | Scan for 〜ないわけではない / 〜なくはない patterns |
-| RL-8: No noun-phrase stacking (≥4 nouns in sequence without particles) | Count consecutive nouns |
-| RL-9: No unattributed specific numbers in report style | Scan for bare numbers without 〜によれば / 〜によると |
-| RL-10: No passive voice stacking (≥2 passive per sentence in any style) | Count 〜される / 〜られる per sentence |
+### RLs that reference old style names (must update):
+
+| RL | Current Reference | v6.0.0 Update |
+|----|-------------------|----------------|
+| RL-3 | 「情報分析 (report/press/deck/hottopic/topic)」 | Change to 「news (flash/wrap/earnings/indicator/digest/alert) + trade-ideas/theme」 |
+| RL-4 hard limits table | `marketing/sns`, `marketing/push`, etc. | Change to `campaign/`, `trade-ideas/` etc. as appropriate |
+| RL-9 | 「情報分析 scenes (report/press/deck/hottopic/topic)」 | Change to news T1 scenes + trade-ideas T1 scenes |
+| RL-11 | Lists `press/legal/report/support` in tone marker prohibition | Change to reflect new T1 style names |
+| AC-8 | References `report/hottopic` | Change to `news/flash` |
+
+### New RLs needed for v6.0.0:
+
+| Proposed RL | Style Scope | Type |
+|-------------|------------|------|
+| RL-13: trade-ideas dual-register exception | trade-ideas only | RL-11 exception clause |
+| RL-14: campaign deadline mandate (CA-1) | campaign only | New hard constraint |
+| RL-15: compliance zero promotional tone (C-1) | compliance only | Mechanical (grep for 「！」, 「今すぐ」) |
+
+**Alternative approach (recommended)**: Rather than multiplying global RLs, encode campaign/trade-ideas/compliance specific constraints within the T1 style definition in SKILL.md (parallel to how RL-12 already applies only to `marketing`). Keep global RLs truly global (RL-1 through RL-12) and add T1-scoped additive constraints in the routing table.
+
+## ADR Gap (Phase 1.9 → Phase 2.1)
+
+Three major v6.0.0 architectural decisions require ADR records:
+
+| Decision | Files Affected | Priority |
+|----------|----------------|----------|
+| legal+support → compliance merger | SKILL.md, style-guide.md, case-library.md | HIGH |
+| news/report split (analysis % boundary) | SKILL.md, style-guide.md | HIGH |
+| RL-11 exception for trade-ideas dual-register | SKILL.md | Medium |

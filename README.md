@@ -6,6 +6,8 @@
 
 > 当前版本: **v5.2.0**
 
+> **平台 footer 前提 (ADR-006)**: trade-ideas 的短尺场景 (flash / picks / earnings / morning短尺 / community短尺) 不生成个别免责声明，前提是分发平台 (app push / 券商 dashboard / SNS feed) 已配置全局免责 footer。Skill 本身不验证该前提，由运营方负责保障平台级覆盖。长尺场景 (theme / morning长尺 ≥ 500字) 仍需内嵌免责文 (AC-10)。
+
 ---
 
 ## 功能概述

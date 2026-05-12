@@ -2,33 +2,44 @@
 name: platform-check
 type: diagnosis
 skill: jp-style-optimizer
+version_assessed: 6.5.0
+date: 2026-05-12
+target_version: 6.6.0
 ---
 
-> **Archived**: This diagnosis was conducted pre-v4.0.0. The critical findings (broken Python script workflow, {{PROJECT_DIR}} unresolved, 0% constraint enforcement) were all resolved in v4.0.0–v4.1.0. Retained for historical reference only — do not use as current state assessment. See CHANGELOG.md v4.0.0+ entries for resolution details.
-
-# Platform Compatibility Check
+# Platform Compatibility Check (v6.6.0 Boost — moomoo JP Routing Integration)
 
 ## Scan Method
 
-Searched all skill files for: tool names (Bash, Read, Write, Edit, Grep, Glob, Agent, WebSearch), absolute paths, platform-specific syntax, shell commands.
+Searched newly added and edited files for: tool names (Bash, Read, Write, Edit, Grep, Glob, Agent, WebSearch), absolute paths (`/root/`, `/home/`, `~/`), shell or Python commands, `{{TEMPLATE_VAR}}` unresolved placeholders.
 
-## Issues Found
+Files scanned this release:
+- `references/moomoo-jp-routing.md` (new)
+- `diagnosis/moomoo-jp-control-group.md` (new)
+- `references/style-guide.md` (1-line edit planned)
+- `SKILL.md` (References table row planned)
 
-| Issue | Location | Severity | Fix |
-|-------|----------|----------|-----|
-| `cd {{PROJECT_DIR}} && python -X utf8 main.py ...` — platform-specific bash command referencing non-existent script | SKILL.md, Workflow section | **CRITICAL** | Replace entire execution step with inline LLM execution |
-| `{{PROJECT_DIR}}` — unresolved template placeholder, not a valid path on any platform | SKILL.md, Workflow section | CRITICAL | Remove — no external script needed |
-| `python -X utf8` — assumes Python installed and in PATH | SKILL.md, Workflow section | High | Remove — no Python dependency needed |
-| Post-execution verification steps reference output from the Python script that doesn't exist | SKILL.md, Workflow section | High | Replace with inline verification steps |
+## Results
 
-## Clean Areas
+### references/moomoo-jp-routing.md (new)
+- No tool references ✓
+- No absolute paths ✓
+- No shell/Python ✓
+- No unresolved placeholders ✓
+- All cross-references use relative paths within the skill (`case-library.md`, `diagnosis/moomoo-jp-control-group.md`) ✓
 
-- SKILL.md frontmatter: no platform-specific fields
-- `references/style-guide.md`: no tool references, no absolute paths — clean
-- `build/` directory files: documentation only — no platform dependencies
+### diagnosis/moomoo-jp-control-group.md (new)
+- Documentation only — no execution code ✓
+- Sample text is verbatim Japanese excerpts; no escape characters or template syntax ✓
+- No tool references ✓
 
-## Verdict
+### Pending edits (style-guide.md, SKILL.md References row)
+- Will add table row only; no platform-specific syntax introduced ✓
 
-**NOT CLEAN** — 4 issues, all stemming from the same root cause: the broken Python script workflow.
+## Verdict: **CLEAN**
 
-The fix is architectural: remove the bash execution step entirely and replace with direct LLM execution. This makes the skill platform-agnostic — no shell, no Python, no file paths required.
+No platform-specific dependencies introduced by v6.6.0 additions. The skill remains LLM-native and portable across Claude Code, Codex, Gemini CLI, and OpenClaw without modification. All reference files use relative-path references resolved by the loader, not by tool invocation.
+
+## v6.6.0 Platform Considerations
+
+The conditional-load pattern for `moomoo-jp-routing.md` (load when input contains `moomoo` / `moomoo証券`) is identical to the existing `case-library.md` brand-match pattern (Step 3.5). No platform behavior changes.

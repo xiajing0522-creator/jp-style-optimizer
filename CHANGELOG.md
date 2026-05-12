@@ -4,6 +4,81 @@ Format: narrative summary for major changes + Keep a Changelog item list.
 
 ---
 
+## Versioning Policy
+
+Adopted 2026-04-30. Applies to releases **after** 6.0.0. Historical entries retain their original numbering.
+
+| Bump | Trigger | Examples |
+|------|---------|----------|
+| **MAJOR (X.0.0)** | **Only** when ANY of: ① core Stance rewrite (cognitive position changes); ② workflow full restructure (Step count/order wholesale change); ③ interface removal without backward compat shim | Rewriting SKILL.md stance; collapsing 6-step workflow into 3 phases; dropping `--style` flag entirely |
+| **MINOR (6.Y.0)** | New/renamed T1 style, new T2 scene, new red line, new ADR, new verification step, expanded acceptance criteria — **as long as backward compat mapping is provided** | Adding `pre-launch` scene; adding CA-9 legal-risk channel-split; renaming a T1 with old→new compat table |
+| **PATCH (6.0.Z)** | Swipe/Rewrite Pattern additions, localization sample extractions, typo/doc fixes, verification-block format tweaks | New brand-name convention rows; moomoo EDM pattern extraction; fixing broken cross-reference |
+
+**Hard rules**:
+- Any MAJOR bump must be paired with an ADR explaining the stance/workflow change.
+- MINOR bumps that rename or retire published interfaces must append a row to the Backward Compatibility table in `references/style-guide.md`.
+- A version number is not consumed unless it actually ships — work-in-progress uses git, not version reservations.
+
+---
+
+## [Unreleased] — 2026-05-12 — moomoo JP routing integration
+
+Adds brand-routing reference for moomoo JP and a 31-sample control group for boost A/B regression testing. Establishes the brand-routing extraction pattern (ADR-011) for future brands whose channel inventory exceeds the threshold. Purely additive — no architecture change, no breaking change. **Version bump pending** (likely MINOR per Versioning Policy: new ADR + new conditional reference file; coordinate with the unshipped v6.1.0 work tracked in `diagnosis/synthesis.md`).
+
+#### Added
+- **`references/moomoo-jp-routing.md`** (1,050w) — moomoo JP channel ↔ `--scene` ↔ RL-4 limit map. 5 Tier 1 sub-tables (campaign / trade-ideas / news / product / compliance) + segment table + brand-specific overrides per Tier 1 + 5-step routing checklist. Conditional load when input contains `moomoo` / `moomoo証券`.
+- **`diagnosis/moomoo-jp-control-group.md`** (386 lines, 31 samples) — verbatim Japanese samples from 飞书 wiki `OGQQwEmmhi0FFJkGwSYcasNCnyh` organized by Tier 1 (campaign 5 / trade-ideas 5 / news 7 / product 10 / compliance 4) with sheet/row provenance and `--style`/`--scene` recommendations. Never runtime-loaded; used for boost-effect A/B regression.
+- **`docs/adr/ADR-011-brand-routing-extraction-pattern.md`** — codifies the case-library entry + `{brand}-routing.md` + `{brand}-control-group.md` three-file pattern. Extraction trigger: ≥ 5 distinct delivery channels in any single Tier 1, OR ≥ 3 Tier 1 categories with channel-level RL-4 differences.
+
+#### Changed
+- **`SKILL.md` References table** — added one row for `moomoo-jp-routing.md` (load condition: input contains `moomoo` / `moomoo証券`; loads alongside the case-library moomoo entry at Step 3 + Step 3.5). SKILL.md word count 3,194 → 3,232 (≤ 3,500 ✓).
+- **`references/style-guide.md`** — added "Brand-Specific Routing Overlay" section with brand-trigger → companion-file table. style-guide.md word count 668 → 751 (≤ 1,500 ✓). Always-loaded total 3,827 → 3,983w (≤ 5,000 ✓).
+- **`references/case-library.md` (moomoo entry)** — appended "Companion files" pointer to `moomoo-jp-routing.md` and `moomoo-jp-control-group.md`. Expanded "Primary scenes" to reflect cross-T1 coverage discovered during the audit.
+- **`diagnosis/structural-audit.md` / `token-audit.md` / `platform-check.md`** — refreshed for this release; structural 9-item check PASS, token budget within limits, platform CLEAN.
+- **`diagnosis/synthesis.md`** — appended Phase 1 summary, Phase 2 prescription (8 actions), Phase 3 verification.
+
+#### Backward Compatibility
+- No breaking changes. Existing `--style` / `--scene` calls unaffected. Old `--style marketing` etc. continue to route per the existing Backward Compatibility table.
+
+---
+
+## [6.0.0] — 2026-04-29
+
+### Major architecture: 5-style Tier 1 redesign + split-by-T1 reference files
+
+Complete Tier 1 taxonomy redesign via mojo-skill-creator boost workflow. Replaces the legacy 5-style taxonomy (marketing/product/report/legal/support) with domain-research-backed architecture (campaign/trade-ideas/news/product/compliance). Splits monolithic style-guide.md into per-T1 conditional reference files, reducing always-loaded context 56% (7,828→3,478 words).
+
+#### Added
+- **`campaign` (T1)**: New style for period-limited incentive campaigns. 8 constraints (CA-1–8). 6 T2 scenes: launch/remind/lastday/result/seasonal/referral. Lifecycle-based design.
+- **`trade-ideas` (T1)**: New style for market analysis with action bridge. 8 constraints (TI-1–8). 6 T2 scenes: flash/theme/earnings/morning/picks/community. Dual-register design (RL-11 exception).
+- **`news` (T1)**: New style for objective financial event reporting. 7 constraints (NC-1–7). 6 T2 scenes: flash/wrap/earnings/indicator/digest/alert. Strict fact-first, CTA禁止, analysis≤30%.
+- **`compliance` (T1)**: Merged legal+support into unified trust-building style. 7 constraints (C-1–7). 5 T2 scenes: disclosure/terms/disclaimer/faq/guide.
+- **Per-T1 guide files**: `references/campaign-guide.md`, `references/trade-ideas-guide.md`, `references/news-guide.md`, `references/product-guide.md`, `references/compliance-guide.md` (each ≤340 words, conditional load).
+- **AC-9–AC-12**: New acceptance criteria for campaign (deadline), trade-ideas (disclaimer), news (CTA absence), compliance (zero promotional).
+- **Step 5 style-specific checks**: campaign CA-1/CA-3/RL-12; trade-ideas dual-register/action bridge/disclaimer; news analysis cap/CTA absence; compliance 謙譲語II.
+- **docs/adr/**: ADR-002 (news/report split), ADR-003 (trade-ideas dual-register), ADR-004 (compliance merger).
+- **9 new T2 scenes**: trade-ideas/{flash,theme,earnings,morning,picks,community}, news/{wrap,indicator,digest,alert}, product/{release,onboard,compare}, campaign/{remind,lastday,result,seasonal,referral} (total: 29 scenes, was 20).
+
+#### Changed
+- **style-guide.md**: Rewritten as routing inference table only (668w, was 4,982w). All constraint content moved to per-T1 guide files.
+- **SKILL.md Tier 1 table**: Replaced marketing/report/legal/support with campaign/trade-ideas/news/product/compliance.
+- **SKILL.md Tier 2 table**: Expanded from 20 to 29 scenes.
+- **RL-11**: Added trade-ideas dual-register exception. Analysis sections だ/である; reader-action sections です/ます; intra-paragraph mixing still prohibited.
+- **RL-12**: Scoped to campaign only (was marketing). Removed from product scope.
+- **RL-3, RL-9**: Re-scoped from `情報分析` to `news + trade-ideas analysis sections`.
+- **Layer 3 Proof & Frame table**: Added campaign and trade-ideas rows.
+- **Step 3 state output**: Updated to list new 5 T1 styles.
+- **Backward compat table**: Extended to cover all old T1→new T1 mappings.
+
+#### Removed
+- `marketing` style (→ campaign or product depending on content)
+- `report` style (→ news or trade-ideas depending on CTA/analysis%)
+- `legal` style (→ compliance)
+- `support` style (→ compliance)
+- Monolithic style-guide.md per-style constraint sections (content distributed to guide files)
+
+---
+
 ## [5.2.0] — 2026-04-28
 
 ### Cross-style optimization: D9 per-style, Business Goals, quality rubric expansion

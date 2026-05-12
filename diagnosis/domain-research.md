@@ -2,67 +2,102 @@
 name: domain-research
 type: diagnosis
 skill: jp-style-optimizer
+version_assessed: 5.2.0
+date: 2026-04-29
+target_version: 6.0.0
 ---
 
-# Domain Research: Japanese Financial Text Register Editing
+# Domain Research Summary (v6.0.0 Boost)
 
-## Task Definition
-
-The skill automates **Japanese financial copy editing** — transforming existing Japanese text into one of four professional registers: formal (書き言葉), marketing (販促), research report (レポート), and SNS. The editing must preserve technical terminology verbatim while changing only register markers.
-
----
-
-## Source Analysis (≥ 5 Sources)
-
-### Source 1: 金融庁「金融商品の販売等に関する法律」および目論見書ガイドライン
-
-**Type**: Regulatory authority, formal register standards
-**Finding**: 金融庁 requires that financial product disclosures use だ/である体 with zero ambiguity in factual claims. Hedging expressions (〜リスクがある、〜の可能性がある) must appear whenever expressing forward-looking claims. Passive constructions are permitted in regulatory text but should be minimized in investor-facing materials.
-**Implication**: The `formal` style's constraints (だ/である体, no hedging for present facts, hedging for forward-looking claims) align with regulatory practice. Missing from the skill: the formal style currently doesn't distinguish between "present fact" (no hedge needed) and "forward-looking claim" (hedge required). This distinction is critical in formal financial writing.
-
-### Source 2: 野村証券「マーケット・エクスプレス週報」(2024Q1–Q4)
-
-**Type**: Benchmark report-style source
-**Finding**: Nomura's weekly market express uses a highly specific structure: (1) 週間概況 — factual summary in past tense, (2) 来週の見通し — always uses 〜と見られる/〜見込み for every forward-looking claim, (3) 注目イベント — enumerated list with hedging. House style consistently avoids 〜だろう in favor of 〜と見られる. Never uses 〜と思われる (too vague). Preferred: 〜と考えられる for interpretation, 〜見込み for forecast.
-**Implication**: The skill's report style says "〜と見られる / 〜見込み" which is correct. But it doesn't distinguish between 〜と考えられる (interpretation) vs 〜見込み (forecast). A Layer 3 skill would make this distinction. Also: 〜だろう appears in the current style-guide examples but Nomura actually avoids it.
-
-### Source 3: 楽天証券 公式 Twitter / X アカウント (2024) + MarketSpeed II 開設 LP
-
-**Type**: SNS and marketing benchmark
-**Finding**: Rakuten's SNS style has a consistent signature: (1) benefit stated in the first 15 characters, (2) specific emoji usage — 📈📉💡🎉 appear frequently, financial context specific, (3) CTA form: 「今すぐ確認する」「詳しくはこちら▶」— always with an action verb, never 「ご確認ください」in SNS context, (4) Length: 80-110 characters is sweet spot, rarely using the full 140. Marketing LP style: hook → feature-as-benefit → CTA, exactly as specified in style-guide.md.
-**Implication**: SNS style is well-captured. One gap: the skill allows up to 140 chars, but Rakuten's actual practice targets 80-110. The skill could add a "target range" note alongside the hard limit. CTA form is slightly off — style-guide.md examples use 「今すぐ確認する」correctly.
-
-### Source 4: SBI証券 目論見書・商品説明書 (2024年度版)
-
-**Type**: Formal register benchmark, investment product disclosures
-**Finding**: SBI's formal disclosure documents use だ/である体 throughout. Key signature: (1) No contractions, (2) Verb-final sentences only — never trailing nominalization (〜であること / 〜ということ as sentence-enders are avoided), (3) Technical terms appear in full form — no abbreviations even for well-known terms (「東京証券取引所」not「東証」in formal contexts), (4) Parenthetical definitions for first-use technical terms, (5) Sentence length: 30-50 characters per sentence on average.
-**Implication**: The skill's `formal` style guide doesn't mention: (a) no trailing nominalization, (b) full-form technical terms (no abbreviations), (c) sentence length guidance. These are real differentiators between "formally correct" and "genuinely reads like an SBI disclosure."
-
-### Source 5: 大和証券「大和レポート」スタイルガイド (industry cross-reference)
-
-**Type**: Securities company report-style benchmark
-**Finding**: Daiwa's report style uses a different hedging register than Nomura: they prefer 〜との見方が広がっている, 〜が示唆される over Nomura's direct 〜と見られる. Both are valid report-register hedges. The key shared constraint: **numbers are always attributed** — "Bloomberg によれば〜" or "会社発表資料では〜" precede any specific figure. Unattributed numbers in report style are a hard error.
-**Implication**: The skill's report-style constraints list "Numerical claims must be attributed or hedged" — this is present and correct. Gap: the constraint says "hedged" as an alternative to attributed, but Daiwa/Nomura practice shows attribution is preferred over hedging for specific numbers.
-
-### Source 6: 日本経済新聞 スタイルブック (publicly referenced industry standard)
-
-**Type**: Japanese financial journalism register
-**Finding**: Nikkei's style guide (referenced by multiple securities firms' communications teams) distinguishes four writing anti-patterns specific to Japanese financial text: (1) 二重否定 (double negatives in analytical claims — confusing in any register), (2) 名詞句の過多 (noun-phrase stacking — "経済成長率上昇傾向継続" — obscures meaning), (3) 受け身の多用 in factual sections (passive voice stacking), (4) 接続詞過多 (connector overuse — また/さらに/なお appearing 3+ times per paragraph).
-**Implication**: The skill has no anti-pattern checklist for Japanese financial writing. These four patterns from Nikkei style guide should be red lines — they're verifiable by output scan and represent real failure modes across all 4 style targets.
+Full per-style research documents are in `build/domain-research-*.md`. This file provides the synthesis-ready summary and expert-vs-skill workflow mapping.
 
 ---
 
-## Expert Workflow vs. Skill Workflow
+## Sources by Style (≥ 5 entries)
 
-| Expert Step | Expert Time | Skill Currently | Gap |
-|-------------|-------------|-----------------|-----|
-| 1. Read input fully, identify register & technical terms | 20% | RL-6 checks language, but no term extraction step | No term lock before transformation |
-| 2. List all financial/technical terms that must not change | 15% | Implied by RL-1 but not an explicit step | Agent might forget to check before transforming |
-| 3. Identify source register and transformation distance | 10% | Not present | No source register diagnosis |
-| 4. Apply target style, sentence by sentence | 30% | Python script (broken) → no actual execution | Core execution is entirely absent |
-| 5. Self-check: scan for register leakage (wrong verb endings, etc.) | 15% | Post-execution verification (broken) | Verification never runs |
-| 6. Naturalness read: "does this sound like the reference?" | 10% | Not present | Critical Layer 2→3 gap |
+| # | Style | Source File | Key References |
+|---|-------|------------|----------------|
+| 1 | campaign | build/domain-research-campaign.md | 楽天証券キャンペーンLP, SBI証券「新規口座開設特典」, moomoo証券アプリ通知, 各社メルマガ |
+| 2 | trade-ideas | build/domain-research-trade-ideas.md | 楽天証券「マーケット情報」, moomoo証券「ホットトピック」, 野村証券「市場見通し」, SBI証券「テーマ株」 |
+| 3 | news | build/domain-research-news.md | 日経電子版, NHK経済ニュース, Reuters JP, Bloomberg JP, 共同通信 |
+| 4 | product | build/domain-research-product.md | SBI証券「操作ガイド」, 楽天証券「使い方ガイド」, moomoo証券YouTube, マネックス証券「ツール」 |
+| 5 | compliance | build/domain-research-compliance.md | 金融庁「ディスクロージャー実務指針」, 金融商品取引法第37条の3, 日本証券業協会「広告指針」, 野村証券サポートページ |
 
-**Key Finding**: Steps 1-3 (input analysis) are collapsed into a single language check. Steps 4-5 (execution + verification) are delegated to a Python script that doesn't exist. Step 6 (naturalness check) is completely absent.
+---
 
-The expert spends 45% of effort on input analysis and verification — the skill spends approximately 0% of effective effort there because its execution mechanism is broken.
+## Expert Workflow vs. Skill Workflow Mapping
+
+### campaign (v5.2.0 gap: ~80% uncovered)
+
+| Expert Phase | Alloc | v5.2.0 Coverage | Gap |
+|---|---|---|---|
+| Incentive/特典設計 | 30% | `marketing/event` covers structural template only | MISSING: lifecycle, 特典具体化, 金額表現ルール |
+| CTA stage alignment (Cold/Warm/Hot) | 20% | Segment feature covers psychology, not CTA temperature | PARTIAL |
+| Lifecycle sequencing (launch→remind→lastday→result) | 25% | Not modeled | MISSING |
+| Legal compliance (景品表示法, 金商法広告) | 15% | Not explicitly modeled for campaign | MISSING |
+| Brand consistency across lifecycle | 10% | Not modeled | MISSING |
+
+### trade-ideas (v5.2.0 gap: ~100% uncovered — entirely new)
+
+| Expert Phase | Alloc | v5.2.0 Coverage | Gap |
+|---|---|---|---|
+| Market timing & speed (速報性) | 25% | Not modeled | MISSING |
+| Analysis-to-action bridge | 30% | `report` prohibits CTA — opposite behavior | MISSING |
+| Dual-register (分析:だ/である + 読者:です/ます) | 15% | RL-11 prohibits this mixing | CONFLICT — needs RL-11 exception |
+| Investment disclaimer (投資助言非該当) | 20% | `legal/disclaimer` exists but separate style | PARTIAL |
+| Risk/opportunity balance (両面提示) | 10% | Not modeled | MISSING |
+
+### news (v5.2.0 gap: ~30% — covered by `report` but imprecisely)
+
+| Expert Phase | Alloc | v5.2.0 (`report`) | Gap |
+|---|---|---|---|
+| Fact-first mandatory structure | 40% | `report` allows 背景先行 | PARTIAL — needs strict enforcement |
+| Zero analysis (主観ゼロ) / analysis cap (≤30%) | 35% | RL-3 covers subjective; `report` allows analysis | PARTIAL — analysis cap not explicit |
+| Attribution (出典) | 15% | RL-9 present | OK |
+| Timeliness annotation (時間属性必須) | 10% | Not modeled | MISSING |
+| CTA absolute prohibition | required | Present in `report` | OK |
+
+### product (v5.2.0 gap: ~25% — mostly covered)
+
+| Expert Phase | Alloc | v5.2.0 | Gap |
+|---|---|---|---|
+| Feature→Benefit mandatory pairing | 40% | Present in `product/detail` | OK |
+| Terminology onboarding | 15% | Not in explicit RL | MISSING |
+| Scannability (箇条書き/表構造) | 20% | Not modeled | MISSING |
+| release/onboard/compare scenes | 25% | 3 scenes not modeled | MISSING |
+| CTA level calibration (optional, low-commitment) | 10% | RL-12 requires CTA for marketing; conflict | CONFLICT |
+
+### compliance (v5.2.0 gap: ~20% — legal+support covered, merger logic missing)
+
+| Expert Phase | Alloc | v5.2.0 | Gap |
+|---|---|---|---|
+| Legal precision (法的正確性) | 50% | RL-5, disclosure register present | OK |
+| Risk/liability language | 30% | disclaimer scene present | OK |
+| Precaution hedge (正確性保証構文) | 10% | Not modeled | MISSING |
+| Structural completeness gate | 10% | Not enforced | MISSING |
+| Cross-reference (FAQ末尾にdisclaimer付加等) | recurring | Separate T1 blocks this | MISSING — merger solves this |
+
+---
+
+## Cross-Disciplinary Findings
+
+| Finding | Source Domain | Application |
+|---------|--------------|-------------|
+| Lifecycle messaging architecture | Direct marketing / email | campaign 4-phase scene design |
+| Dual-register in financial media | 日経, Bloomberg JP | trade-ideas RL-11 section-level exception |
+| Analysis-to-action bridge (% threshold) | CFA Institute content standards | news/trade-ideas distinction at 30% analysis cap |
+| Precaution hedge before disclaimer | Legal communication best practice | compliance C-5 constraint |
+| F→B mandatory pairing (not optional) | SaaS product marketing | product PC-1 as hard constraint |
+| Zero promotional tone as compliance anchor | 金融庁 guidance | compliance C-1 unifying all 5 scenes |
+
+---
+
+## Key Constraints by Style (v6.0.0 additions)
+
+| Style | Count | Core Constraints |
+|-------|-------|-----------------|
+| campaign | 8 (CA-1–8) | 期限明示必須, 条件透明性, 特典具体化, 金額表現, CTA stage alignment, lifecycle一貫性, multi-state整合, 煽り適正化 |
+| trade-ideas | 8 (TI-1–8) | 投資助言非該当, 推測表現義務化, データ出典, 市場タイミング, 行動橋渡し設計, リスク両面提示, 免責文言, 主観排除 |
+| news | 7 (NC-1–7) | 事実先出し, 数値完全保持, 主観ゼロ, 時間属性必須, CTA禁止, 出典処理, レジスタ純度 |
+| product | 8 (PC-1–8) | F→B必須ペア, 専門用語初出説明, 誇張禁止, CTA任意, 1アクション/1ステップ, スキャナビリティ, 能動態優先, 数値具体化 |
+| compliance | 7 (C-1–7) | 宣伝性ゼロ, 術語完全保持, レジスタ一貫性, リスク責任言語, 情報正確性保証構文, 法的フレーミング, 構造完全性 |
