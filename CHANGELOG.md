@@ -21,6 +21,168 @@ Adopted 2026-04-30. Applies to releases **after** 6.0.0. Historical entries reta
 
 ---
 
+## [Unreleased] — 2026-05-15 — edm-localization-expert v0.1.1(I1 拡張 + K3 新設)(v6.7.0 pending)
+
+4.21 sheet ico看这个 13 行の実戦 polish 過程で 2 件の細目化を抽出:
+
+- **I1 を 3 タイプに拡張** — 旧 I1「文末「だ」「だろう」「焦点だ」追加」を、(a)助動詞型 / (b)推量・期待型 / (c)動詞補完型 の 3 サブパターンに分解。corpus 内 03.18 r28(`…利益確保も` → `…利益確保も狙える`)を(c)型として明示登録、4.21 r14 で reproduce 確認。Title セクションでの体言止め解消パターンを汎用化。
+- **K3 新設「疑問内容句尾「。」→「?」転換」** — DS が「~なるか。」「~どうか。」のような疑問副詞含み文を「。」で締めている場合、Title/Subject では「?」に置換。E2(半角→全角 ?)とは別軸の "文末記号置換" として独立。4.21 r4(`60,000円の大台突破なるか。` → `…なるか?`)で初記録、corpus 内同型多数。Frequency Reference Table で 中頻度 と暫定推定。
+
+#### Changed
+- **`references/edm-localization-expert.md` v0.1.0 → v0.1.1** — frontmatter version bump。
+- **§1.I1** — 標題「文末「だ」「だろう」「焦点だ」追加(体言止め回避)」→「末尾動詞・助動詞補完(体言止め回避)」。3 サブパターン (a)(b)(c) 記述追加、(c) 動詞補完型例に 03.18 r28 + 04.21 r14 reproduce 注記。
+- **§1.K3(新規)** — 疑問内容句尾「。」→「?」転換 ルール、E2 との差異(記号変換 vs 文末記号置換)、Content 本文での例外(断定/伝聞末尾「。」維持)を記述。corpus 観察:04.21 r4 で初記録、コーパス内同型多数。
+- **§3 Frequency Reference Table** — Rank 5 行を「I1 文末を整える」→「I1 末尾動詞・助動詞補完((a)(b)(c))」に書き換え、新 Rank 19a 行 K3 を中頻度として追加。
+
+---
+
+## [Unreleased] — 2026-05-14 — RL-4 Hard/Soft 階層化(件名・タイトル・見出し系を Soft 化)(v6.7.0 pending)
+
+RL-4 の文字制限を **Hard / Soft** の二段階に分割。従来は全 field が Hard ceiling として「超過 → 必ず短縮 → 再生成」フローを強制していたが、件名・タイトル・見出し系(顧客の最初接触面・装飾的伸縮余地あり)では編集者後処理での微調整余地を残す方が実務に合うとの判断。本文・プリヘッダー・CTA・全文・各文系(配信媒体仕様・構造的に超えると壊れるもの)は引き続き Hard 維持。
+
+**Soft 適用 field**(超過時 ⚠ flag + 短縮候補案 1-3 件併記、配信決定 = ⚠ 注記交付 / P1):
+- `campaign / push channel` タイトル ≤20
+- `campaign / edm channel` 件名 ≤40
+- `campaign / banner channel` メイン ≤15
+- `news/{flash, alert, wrap, earnings, digest, indicator}` 見出し(各 scene の上限値)
+
+**Hard 維持 field**(超過 → P0 交付不可、compression rules 適用後再計測):
+- 全文系(sns/flash 全文、news 各 scene 全文、trade-ideas/flash 全文)
+- 本文・プリヘッダー・CTA・サブ・各文(product/script)
+
+#### Changed
+- **`SKILL.md` RL-4** — 表題を「Scene hard character limits」→「Scene character limits」に変更。表に Type 列(Hard/Soft)追加、push/edm/banner channel の field を行ごとに分割表示。Soft 違反時の処理(⚠ flag + 短縮候補案併記、P1 注記交付)を明記。
+- **`SKILL.md` AC-3 / AC-4** — Hard / Soft の挙動差を明示。Soft 超過時の表示形式「件名: 42文字 ⚠ Soft (≤40 推奨) / 短縮案: …」を AC-4 に追加。
+- **`SKILL.md` Step 5「Scenes with character limits (RL-4)」** — Hard 違反 = P0 / Soft 違反 = P1 の分岐明記。Soft 違反時は短縮候補案を併記し編集者判断に委ねる。
+
+#### Rationale
+- 4.21 sheet 検証中、`r2 Subject Line` が DS 出力 42 字 = RL-4 件名 40 字超過。従来 spec では強制短縮が要求されたが、native editor の corpus(N=274)を見ると 件名/見出し は ±1〜3 字の振れ幅は許容され、機械的短縮よりも flag + 候補提示の方が後段ワークフローに親和的。RL-4 全体を緩めるのではなく、装飾系のみ Soft 化することで配信媒体仕様(本文/CTA)の保護は維持。
+
+---
+
+## [Unreleased] — 2026-05-14 — edm-localization-expert v0.1.0(empirical N=274 抽样、post-LLM editorial pass 14 系統 pattern 化)(v6.7.0 pending)
+
+`references/edm-localization-expert.md` を新設(初稿 v0.1.0、empirical 直行)。**LLM(DS 3.2)出力の日本語コピーをネイティブ編集者が EDM 配信形態に整える際の編集パターン集**として、moomoo 証券 JP の Trade Idea EDM 2 年分 corpus(95 週次バッチ、4-person panel:@kambara / @tabata / @kawade / @v_hayakawa)から **274 real DS→LOC edit pairs** を抽出・類型化。
+
+**14 系統 pattern**(A 〜 L + Silent Baseline + Frequency Table + Sub-module 別優先度):
+1. **A. Brand / Entity naming** — A1 `moomoo`→`moomoo証券`(頻出)/ A2 セクター・テーマ裸名詞 → `◯◯株 / ◯◯関連株 / ◯◯銘柄` 補完(頻出)
+2. **B. Numeric formatting** — B1 全角→半角(頻出)/ B2 千位カンマ(中)/ B3 `%` 全半角は揺れ
+3. **C. Verbal phrasing 金融用語化** — C1「下回る」→「割れ」(n=2 注意)/ C2 カタカナ口語動詞→漢語 / C3 強い断定語→中庸(頻出)/ C4「てる」→「ている」(n≈3)
+4. **D. Particle / connective** — D1「年初来で」→「年初来から」(n=1 注意)/ D2 逆接「ても」/ D3 属格化(中)
+5. **E. Punctuation & spacing** — E1 `?!`⇄`!?`(n=2)/ E2 半角→全角 `？`(頻出)/ E3 読点・スペース整形(中)/ E4 主見出し読点削除
+6. **F. Quote/bracket** — F1 新概念の `「」` 化(頻出)/ F2 ストレート→カーリー quote(頻出)/ F3 `「」` 外し・curly 互換
+7. **G. Technical term refinement** — G1 `AI`→`生成AI`(頻出)/ G2 業界語⇄平易語 双方向(中)
+8. **H. Ticker conventions** — H1 `<XXXX>` `(XXXX)` `<XXXX.JP>` は silent baseline 維持
+9. **I. Sentence-final** — I1 文末「だ・だろう・焦点だ」追加(頻出)/ I2 感嘆→疑問の煽り抑制(中)/ I3「皆さま」→「みんな」(n=2 コミュニティ限定)
+10. **J. 体裁** — J1 1行→2行 改行分離(中)
+11. **K. Specificity 補強** — K1 ぼかし→具体(頻出)/ K2 ロケール誤り・typo 修正(頻出)
+12. **L. その他** — L1 報道発言の鉤括弧化 / L2 URL 独立行化(頻出)
+
+**Silent baseline**(変更されない要素群): 銘柄コード / 企業正式名称 / 数値ファクト / テクニカル用語(MACD/RSI/PBR/NT 倍率/QUICK コンセンサス) / CTA 定型句末尾「moomoo証券なら売買手数料0円で日本株に投資できる！今すぐチャンスをつかもう！」/ URL query string / 段落構造の根幹。
+
+**Sub-module 別適用優先度**(Subject Line / Preview / Title / Introduction / Content / CTA & Link / Button / Greeting / Picture)を corpus 観察に基づいてマッピング。
+
+#### Added
+- **`references/edm-localization-expert.md`(新規 v0.1.0)** — frontmatter(N=274, source, editors, ds_engine, scope), §0 Scope & Application, §1 Pattern Catalog(14 系統 A〜L), §2 Silent Baseline, §3 Frequency Reference Table(28 行 ranking), §4 Sub-module 別適用優先度(9 sub-module × 主要 pattern マッピング), §5 検証ブロック追加項目(Step 5 verification block), §6 Limitations(6 項), §7 Cross-reference(campaign-guide / trade-ideas-guide / trade-ideas-r-expert / case-library / moomoo-jp-routing)。
+- **`SKILL.md` References table** に新行追加(`edm-localization-expert.md`、Load When = `--style campaign --scene edm` AND 入力が LLM/機械翻訳の日本語出力 OR `--style trade-ideas` で配信媒体が EDM、Step 4 Layer 2 末尾 / Layer 3 前)。
+
+#### Limitations
+- 単一ブランド corpus(moomoo 証券 JP)— 他金融広告主では再検証必要。
+- DS 3.2 出力に対する pattern — GPT/Claude/Gemini 等他 LLM では特に B1/B3/F2 のフォーマット既定値が異なる可能性。
+- EDM channel 最適化 — Push/SNS/Banner では文字制限が異なるため A2/J1 は適用条件再評価。
+- 観察 n=1, n=2 pattern(D1 / E1 / I3 / C1)は一般化リスクあり、新規 corpus で要検証。
+- K2 factual 修正は LLM 性能向上で頻度低下する pattern(長期的には A1/A2/F2/G1 等の brand/style 固有 pattern が残る)。
+- Editor 個人差(4-person panel)は集合的傾向であり、個別 editor のスタイル差は分離していない。
+
+---
+
+## [Unreleased] — 2026-05-14 — trade-ideas-r-expert v0.2.0(部分実 sample 抽样、R-2.ext / R-X.E / R-X.T 新設)(v6.7.0 pending)
+
+`references/trade-ideas-r-expert.md` を framework-only(v0.1.0)から partial-empirical(v0.2.0)に昇格。moomoo 3 篇 verbatim 抽样により、既存 Type R(80–500 字短型)枠の **外側に存在する** 2 つの sub-form 群を観察・命名:
+
+1. **R-2.ext(Earnings Flash 中型 / 800–2000 字)** — moomoo postId 66020469「【エヌビディア決算速報】時間外一時上昇!」(author Zeber、~1300 字)。**bullet 駆動 H3 sections + 出典タグ bullet 単位密度**(本 sample で「(会社発表)」12 回反復)+ 表情アイコン不在(speed-priority)+ benchmark ranking + 第三者 quote(direct-quote 含)。短型 R-2(150–400)と長型 R-X(4000+)の中間ティアを占める。
+2. **R-X.E(Brand-Bound Long-Form Earnings Deep-Dive / 4000–10000 字)** — moomoo feedId 116134849085446「[NVIDIA 決算 Summary] 圧倒的な業績と『真の起爆剤』!」(author Sherry、~6500-7500 字)。**表情アイコン分隔 H2(8 種多様)+ dual-register(本体 だ/である + 末尾 brand-app CTA「ご確認ください」)+ Option 戦略段(具体 strike + 期日 + 戦略名 + 「ネイキッド売り回避」型注意書き)が定義要素**。
+3. **R-X.T(Brand-Bound Long-Form Theme Deep-Dive / 3500–7000 字)** — moomoo news「Anthropic ショック / 恩恵銘柄抽出」(author Julie、~4500-5500 字)。**修辞疑問先行型リード + 表情アイコン 3 種固定([悲しい顔][ほほえみ][ラッキー])+ 個別銘柄カード固定 3 段構造(事業 → Anthropic 関係 → 恩恵示唆)+ 全文 だ/である 単一 + soft 誘導 CTA(「~に注目したい」「~であろう」)= institutional override 寄り**。brand-app CTA 不在、ETF 推奨段含む。
+
+R-1 / R-2(短型) / R-3 / R-4 は依然 framework-only(v1.0.0 で実 sample 抽样後充填)。
+
+#### Added
+- **`references/trade-ideas-r-expert.md` v0.2.0 sub-form 拡張** — Stance 章の sub-form ルーティング表を 4 行(R-1/R-2/R-3/R-4)から 7 行(+R-2.ext / R-X.E / R-X.T)に拡張。Type R 判定ヒント章に短型/中型/長型 3 ルートを記載。
+- **§1.3 Type R-2.ext** — 11 行構造テンプレート(リード/株価ウィジェット/ヘッドライン段落/決算サマリー bullet/事業別内訳/見通し/コメント/特殊論点/その他/市場の見方/末尾)+ R-X.E との差分表 + N=1 観察。
+- **§1.6 Type R-X.E** — 10 行構造テンプレート(表情アイコン 8 種付帯)+ Option 戦略段の定義要素扱い + N=1 観察。
+- **§1.7 Type R-X.T** — 11 行構造テンプレート(表情アイコン 3 種固定)+ 個別銘柄カード固定 3 段構造 + soft 誘導 CTA(institutional voice)+ N=1 観察。
+- **§2.1 Dual-Register 切換ポイント** に新行「全文単一(R-X.T 適用時、ADR-008 institutional override 準用)」追加。
+- **§2.2 リードパターン** に「業界文脈先行型(R-X.E)」「修辞疑問先行型(R-X.T)」「ナラティブ強調語(RL-3 境界)」3 行追加。
+- **§2.5 出典タグ** に「企業 IR 引用(R-X.T)」「bullet 単位密度(R-2.ext)」明示。
+- **§2.6 推測語尾の階層化** に R-X.T 定義要素「~であろう / ~押し上げよう / ~構造にあろう / 合理的な選択肢かもしれない」記載。
+- **§2.7 末尾(行動橋渡し)** に「brand-app 導線(R-2.ext / R-X.E)」「soft 観察示唆(R-X.T)」明記。
+- **§2.8 moomoo brand voice signature**(新章)— 自動翻訳注 / 出所「moomoo + 外部メディア + 企業 IR」/ 「ーmoomoo ニュース [氏名]」型署名 / brand-app CTA / Option リスク警告 の 5 要素を 3 篇 cross-sample で観察。
+- **§3 Scene 別適用ガイド** に 3 行追加(`earnings`(中型 / brand-bound) ↔ R-2.ext / `earnings`(深掘 / brand-bound + Option) ↔ R-X.E / `theme`(brand-bound 中長型) ↔ R-X.T)。
+- **§4 Anti-Patterns** に 4 行追加(R-2.ext で表情アイコン乱用 / R-X.E で dual-register 抑制 / R-X.T で brand-app CTA 強引挿入 / R-2.ext で出典タグ bullet 単位欠落)。
+- **§5 引用例 5.6 / 5.7 / 5.8** — moomoo verbatim 引用(Zeber / Sherry / Julie 各 1 篇代表段落)。framework 例 5.1〜5.5 は v1.0.0 で実 sample 置換予定として明記保持。
+- **§6 P2-A 対応マッピング** — sub-form 別命中観察(R-2.ext / R-X.E / R-X.T 各 N=1、small sample warning 付き)。R-X.T が institutional voice により A-TI10 / A-TI14 で劣化 / A-TI3 / A-TI7 / A-TI9 で突出という観察を記録。
+
+#### Changed
+- **`references/trade-ideas-r-expert.md` frontmatter** — `version: 0.1.0` → `0.2.0`、`status: framework-only` → `partial-empirical(R-2.ext / R-X.E / R-X.T 観察済、R-1/R-3/R-4 依然 framework-only)`、`source` 行に moomoo 3 篇の具体的識別子(feedId / postId / author)を追加。
+- **`SKILL.md` References table — `trade-ideas-r-expert.md` 行** — v0.1.0 placeholder 表記から v0.2.0 実装内容(7 sub-form 列挙、R-2.ext / R-X.E / R-X.T を太字でマーク)に更新。Load 条件も「短型 ≤500 / 中型 800-2000 brand-bound earnings / 長型 3500-10000 brand-bound deep-dive」に拡張。
+
+#### Backward Compatibility
+- 既存 sub-form(R-1 / R-2 / R-3 / R-4)の章節テンプレート・micro pattern は未変更。新 sub-form は **追加** であり既存制約に上書きしない。
+- TI-C dual-register P0 ゲートの運用ポリシー差分は sub-form 別に明記:R-1/R-2/R-3 厳格 / R-2.ext 末尾 1 文のみ許容 / R-X.E 通常 / R-X.T 緩和(institutional override 寄り)/ R-4 全文「です/ます」一貫。
+- ADR-008 institutional override は R-X.T に **準用** であり拡張ではない。正式拡張は v6.7.0 別 entry で扱う。
+
+#### Limitations(small sample warning)
+- R-2.ext / R-X.E / R-X.T 各 N=1。命中率は単一 sample 観察。v1.0.0 で各 N≥3 へ拡充予定。
+- R-1 / R-2(短型) / R-3 / R-4 は依然 framework-only(WebFetch 制限により kabutan / minkabu / 各券商 morning report 未抽样)。
+- moomoo brand voice signature は 3 篇 cross-sample で観察したが、author 別の差分(Sherry / Julie / Zeber)は未実証。
+
+---
+
+## [Unreleased] — 2026-05-13 — Delivery Quality Gate (v6.2.0 pending)
+
+Formalizes go/no-go judgment for each output. Reclassifies the existing Step 5/6 verification items into a three-tier severity model (P0 hard block / P1 conditional / P2 soft warn) and introduces a final `Delivery Decision` line so downstream readers can tell at a glance whether an output is ready. No new constraints are introduced — every gate ID derives from existing RL-* / AC-* / D-* / per-style codes (CA / TI / NC / PC / C). Backward compatible: legacy Step 5/6 phrasings are preserved as components inside the standardized verification block.
+
+#### Added
+- **`references/delivery-gate.md`** — three-tier severity model, P0 universal (8 items) + P0 per-style (campaign 3 / trade-ideas 3 / news 4 / product 2 / compliance 5), P1 conditional (4 items, source-deficient → ⚠ marker), P2 soft (6 items), decision algorithm, standardized **Delivery Gate** verification block, three worked examples. Loaded at Step 7 entry — not part of the always-loaded Phase 1 bundle (Phase 1 total unchanged).
+- **P2-A — Attractiveness Proxy(per-style)** — added to `references/delivery-gate.md` as a new soft-warn tier alongside P2. Per-style definitions of「吸引力」 with domain-expert validated dimensions:
+  - **campaign 転換吸引力(クリック誘導)** — 9 項:A-CMP1 Benefit-First Urgency / A-CMP2 Lifecycle Consistency / A-CMP3 Concrete Density / A-CMP4 Benefit-Deadline Co-Location / A-CMP6 Numeric Plurality / A-CMP7 CTA Visibility / A-CMP8 Single CTA Focus / A-CMP9 Hook Strength / A-CMP10 Friction Reduction
+  - **trade-ideas 交易転化吸引力(分析→注文)** — 15 項:A-TI1〜A-TI4(分析信頼性スタック / Market Timing / Risk Both-Sides / Confidence Calibration)+ A-TI5〜A-TI10(精度梯度 / 因果語彙 / セクター連結 / 過去事例 / カレンダー連動 / コンセンサス対比)+ A-TI11〜A-TI15(Ticker / Entry-Exit / Risk Line / Action-Bridge Verb / Decision Path Compactness)
+  - **news 情報吸引力(scan-to-decision)** — 7 項:A-NW1/2/3/4 + A-NW7 5W+Unit Completeness / A-NW8 Modality-Free Headline / A-NW9 Factuality-Analysis Boundary
+  - **product 多目的吸引力(理解 / 使用転化 / 継続 / クロスセル)** — 25 項:
+    - 理解 = A-PR1 Jargon Onboarding / A-PR2 Scanability / A-PR3 Concrete Specificity / A-PR4 Action-Per-Step Minimalism / A-PR5 Use-Case Specificity / A-PR6 Outcome Quantification / A-PR7 Negative-Space Avoidance / A-PR8 Compare-Axis Explicit / A-PR19 Goal-Oriented Entry / A-PR24 Empathic Identity Hook / A-PR26 Reading-Outcome Preview / A-PR30 Headline-Embedded Numerals
+    - 使用転化 = A-PR9 First-Action Anchor / A-PR11 Trial-Verb CTA / A-PR20 Testimonial Density / A-PR21 Tenure Proof / A-PR23 Adoption Scale / A-PR25 Authoring Credentialing / A-PR27 Both-Sides Disclosure / A-PR29 Authoritative Reference
+    - 継続 = A-PR12 Frequency Cue / A-PR13 Cumulative Value / A-PR28 FAQ Coverage
+    - クロスセル = A-PR15 Upsell Path Visibility / A-PR17 User-Tier Segmentation
+    - 第二弾追加(2026-05-13、SEO メディア 4 站点抽样研究):A-PR19 / A-PR20 / A-PR21 / A-PR23 / A-PR24
+    - 第三弾追加(2026-05-13、zuu.co.jp/media 8 篇深挖):A-PR25 Authoring Credentialing(監修者+資格+経歴明示)/ A-PR26 Reading-Outcome Preview(「この記事でわかること」型サマリー)/ A-PR27 Both-Sides Disclosure(メリット/デメリット並列)/ A-PR28 FAQ Coverage(末尾よくある質問 ≥3 件)/ A-PR29 Authoritative Reference(公的機関・大手メディア参照)/ A-PR30 Headline-Embedded Numerals(見出しに数値)
+  - **compliance 信頼吸引力** — 4 項:A-CP1/2/3/4
+  - Recorded as `✓/✗` per item with score = `✓ 件数 / 総件数`. **配信決定には影響しない**(score 0/N でも `✅ 交付可` は出る)— hard gate にしない理由は主観性 + 測量誤差。Verification Block に新行 `[P2-A] 吸引力: ... → N/M`。Existing P0/P1/P2 sections unchanged.
+  - **A-TI13 carve-out**:同一出力内 ticker ≥ 5 件 → 広範情報提供と判定し本項免除(個別投資推介責任の境界、ticker 多数列挙時は推介性が希釈される)。
+- **`SKILL.md` Step 7 — Delivery Decision** — invokes `references/delivery-gate.md`, runs the decision algorithm (≤3 P0 revise loops), emits the standardized verification block, and ends with a single `Delivery Decision: ✅ 交付可 | ⚠ 注記交付 | 🛑 交付不可:[IDs]` line. P2-A は同時実行されるが配信決定には影響しない旨を Step 7 説明に明記。
+- **`references/trade-ideas-b-expert.md`** — trade-ideas **Type B**(Blog/SEO 個別株深掘)sub-form 専用 構造・修辞ベンチマーク module derived from 22-article deep-dive of `kabu.bridge-salon.jp`(かぶリッジ、moomoo 証券 in-house SEO blog). **Key finding**:本媒体 22 篇全文で「だ/である」体は **0 件**(soft_register 22/22)、です/ます体一貫。これは既存 `trade-ideas-guide.md` が前提としてきた dual-register(分析=だ/である、読者=です/ます)と異なる sub-form の存在を示す。**設計上の決定**:trade-ideas style を **per-sub-form 拆分管理**に変更 — Type R(券商 research / morning brief、dual-register、短型)/ Type B(SEO 個別株深掘、です/ます一貫、長型 6,000–16,000 字)。本ファイルは Type B 専用、Type R は将来 `trade-ideas-r-expert.md` で別管理(未存在時は `trade-ideas-guide.md` で代用)。Contains: (1) Stance + sub-form ルーティング表 + Type B 判定ヒント;(2) 2 macro article types — B-1 Single-Stock Deep Dive(個別株深掘、5–7 章)/ B-2 Theme/Ranking Deep Dive(テーマ・ランキング、4–6 章);(3) 6 micro-pattern subsections — 「💡 かぶリッジの結論」box 先行 20/22、numeric_density_lead 22/22、結論先行 20/22、専門家 3 層構造、視覚分離マーカー、両面提示比率;(4) Scene 別適用ガイド(theme/community/picks ↔ Type B-1/B-2 マッピング);(5) Anti-Patterns table(投資推奨断定の回避、AC-12/RL-12 流用);(6) 5 verbatim 引用例;(7) P2-A 15 項命中率テーブル。**dual-register P0 ゲート(TI-C)免除条件** を Type B 判定時に追加(SEO 媒体・字数 ≥5,000・個別株深掘トーンが該当)。Loaded lazily at Step 4 entry when `--style trade-ideas` routed AND Type B 判定成立時のみ。SKILL.md References table に Type B/R 2 行を追加(R は placeholder)。
+- **`references/product-expert.md`** — product 構造・修辞ベンチマーク module derived from 20-article deep-dive of zuu.co.jp/media (NET MONEY 編集部). Contains: (1) 3 macro article types — Type A Compare-Long(33–70K chars、`compare`/`detail`)/ Type B Single-Service Review(6–17K、`detail`/`onboard`)/ Type C Interview(7.5–9K、特殊用途)、各 7–8 章節テンプレート;(2) 6 micro-pattern subsections — 導入(修辞疑問共感型 18/20)/ 見出し措辞 / 句法ツールキット(数値密度・体言止め・専門家署名 3 層)/ 肯定否定切換 / 数値出典スタイル / 末尾構造;(3) Scene 別適用ガイド(7 product scenes ↔ Type A/B/簡略 マッピング);(4) Anti-patterns table(既存 RL/AC との衝突回避);(5) 5 verbatim 引用例;(6) P2-A 25 項命中率テーブル(本媒体実装観察データ)。Loaded lazily at Step 4 entry when `--style product` routed. **case-library.md(brand voice)/ product-guide.md(T1+T2 制約)とは職責分離**:本 file は汎用構造・修辞ベンチマーク。SKILL.md References table に新行追加。
+
+#### Changed
+- **`SKILL.md` Output Format** — replaces the freeform `検証:` block with the standardized **Delivery Gate** block, including the new `[P2-A] 吸引力:` line between `[P2]` and `Delivery Decision`. Existing Step 5/6 phrasings remain as the building blocks of P0/P1/P2 sections; legacy readers parsing those phrasings continue to work.
+- **`SKILL.md` References table** — adds a row for `references/delivery-gate.md` (Phase 2 conditional, loaded at Step 7); annotates `cross-style-quality-rubric.md` row to clarify that the rubric is a post-hoc evaluation tool distinct from the delivery gate.
+
+#### Backward Compatibility
+- No interface removal. `--style` / `--scene` / `--segment` calls unchanged.
+- All existing RL / AC / per-style constraint IDs are referenced verbatim — no rule additions, only severity classification.
+- P2-A is purely additive (new soft-warn tier) and does not affect the `Delivery Decision` line. Outputs that would have been `✅ 交付可` before P2-A remain `✅ 交付可` regardless of P2-A score.
+- Phase 1 always-loaded bundle: SKILL.md (3,450w) + style-guide.md (751w) = 4,201w, ≤ 5,000 ✓. `delivery-gate.md` is loaded at Step 7 entry, after routing and transformation are complete — it does not enter the Phase 1 bundle.
+
+#### Token budget
+- SKILL.md: 3,232 → 3,450w (≤ 3,500 ✓; +18w for Step 7 P2-A note + Output Format `[P2-A]` line)
+- `delivery-gate.md`: 965 → ~3,000w (extended budget; +2,035w for P2-A section + Verification Block update + 60 domain-validated dimensions across 5 styles, including 25 product items spanning 4 sub-goals)
+- Phase 1 always-loaded total: 3,983 → 4,201w (≤ 5,000 ✓)
+
+#### Out of Scope (deferred)
+- Renaming `diagnosis/cross-style-quality-rubric.md` to align with the v6.0 5-T1 taxonomy (Marketing/Report/Legal/Support → campaign/trade-ideas/news/product/compliance) — separate PR.
+- Automating D1–D9 scoring from gate output — future ADR.
+
+---
+
 ## [Unreleased] — 2026-05-12 — moomoo JP routing integration
 
 Adds brand-routing reference for moomoo JP and a 31-sample control group for boost A/B regression testing. Establishes the brand-routing extraction pattern (ADR-011) for future brands whose channel inventory exceeds the threshold. Purely additive — no architecture change, no breaking change. **Version bump pending** (likely MINOR per Versioning Policy: new ADR + new conditional reference file; coordinate with the unshipped v6.1.0 work tracked in `diagnosis/synthesis.md`).

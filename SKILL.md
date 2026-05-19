@@ -1,6 +1,6 @@
 ---
 name: jp-style-optimizer
-version: 6.0.0
+version: 6.7.0
 description: >
   Activate when the user provides existing Japanese text and requests a register or
   style change — NOT translation. Trigger phrases by language:
@@ -73,26 +73,35 @@ Applies editorial discipline to existing Japanese financial text. Does not trans
 - **RL-1 Term lock** — Never change a financial/technical term to a synonym, abbreviation, or colloquial equivalent. Extract all terms before transforming. Verify every extracted term appears unchanged in output.
 - **RL-2 Information injection** — Never add facts, figures, or claims not present in the source text. Output propositional content must be a strict subset of input. Verify by scanning output for: (a) any specific number not present in input; (b) any named entity (company, product, person, feature name) not in input; (c) any causal or outcome claim not derivable from input. Flag each found item with「⚠ RL-2: [injected content]」before delivering.
 - **RL-3 news + trade-ideas: no subjective expressions** — news and trade-ideas analysis sections must not contain「思います」「感じます」「〜と思う」「〜と感じる」. Scan output before delivery.
-- **RL-4 Scene hard character limits** — The following scenes have hard character ceilings (full-width = 1 char). Output must state per-field counts in the verification block. If over limit, apply compression rules from the style's guide file before delivering.
+- **RL-4 Scene character limits** — The following scenes have character ceilings (full-width = 1 char). Output must state per-field counts in the verification block. Each limit is classified Hard or Soft.
+  - **Hard**: 必須遵守。超過時は `{style}-guide.md` の compression rules を適用し再生成、再計測。Hard 違反は P0(交付不可)。
+  - **Soft**: 推奨上限。超過時は ⚠ flag + 短縮候補案 1-3 件を verification block に併記して交付可(P1 注記交付)。短縮を強制しない — 編集者後処理を許容。
 
-  | Scene | Field | Hard limit |
-  |-------|-------|-----------|
-  | campaign (all scenes) / sns channel | 全文 | ≤140 |
-  | campaign / push channel | タイトル / 本文 | ≤20 / ≤60 |
-  | campaign / edm channel | 件名 / プリヘッダー / CTA | ≤40 / ≤80 / ≤15 |
-  | campaign / banner channel | メイン / サブ / CTA | ≤15 / ≤25 / ≤8 |
-  | trade-ideas/flash | 全文 | ≤140 |
-  | news/flash | 全文 | ≤140 |
-  | news/alert | 全文 | ≤100 |
-  | news/wrap | 全文 | ≤700 |
-  | news/digest | 全文 | ≤1200 |
-  | news/flash | 見出し | ≤15 |
-  | news/alert | 見出し | ≤15 |
-  | news/wrap | 見出し | ≤32 |
-  | news/earnings | 見出し | ≤32 |
-  | news/digest | 見出し | ≤32 |
-  | news/indicator | 見出し | ≤24 |
-  | product/script | 各文 | ≤30 |
+  Soft は件名/タイトル/見出し系(顧客の最初接触面・装飾的伸縮余地あり)、Hard はそれ以外(本文/プリヘッダー/CTA/全文/各文 — 構造的・配信媒体仕様的に超えると壊れるもの)。
+
+  | Scene | Field | Limit | Type |
+  |-------|-------|-------|------|
+  | campaign (all scenes) / sns channel | 全文 | ≤140 | Hard |
+  | campaign / push channel | タイトル | ≤20 | Soft |
+  | campaign / push channel | 本文 | ≤60 | Hard |
+  | campaign / edm channel | 件名 | ≤40 | Soft |
+  | campaign / edm channel | プリヘッダー | ≤80 | Hard |
+  | campaign / edm channel | CTA | ≤15 | Hard |
+  | campaign / banner channel | メイン | ≤15 | Soft |
+  | campaign / banner channel | サブ | ≤25 | Hard |
+  | campaign / banner channel | CTA | ≤8 | Hard |
+  | trade-ideas/flash | 全文 | ≤140 | Hard |
+  | news/flash | 全文 | ≤140 | Hard |
+  | news/alert | 全文 | ≤100 | Hard |
+  | news/wrap | 全文 | ≤700 | Hard |
+  | news/digest | 全文 | ≤1200 | Hard |
+  | news/flash | 見出し | ≤15 | Soft |
+  | news/alert | 見出し | ≤15 | Soft |
+  | news/wrap | 見出し | ≤32 | Soft |
+  | news/earnings | 見出し | ≤32 | Soft |
+  | news/digest | 見出し | ≤32 | Soft |
+  | news/indicator | 見出し | ≤24 | Soft |
+  | product/script | 各文 | ≤30 | Hard |
 - **RL-5 Disclosure register purity** — compliance/disclosure output must not contain「です」「ます」. State「です/ますなし: 確認済み」in verification block.
 - **RL-6 Translation deflection** — If input is not Japanese (Chinese, English, etc.), return:「このテキストは日本語ではありません。翻訳が必要な場合は lark-cn2jp-finance を使用してください。」Do not optimize.
 - **RL-7 No double negatives** — Avoid 二重否定 (〜ないわけではない / 〜なくはない). Rewrite as a direct positive or qualified statement.
@@ -108,8 +117,8 @@ Applies editorial discipline to existing Japanese financial text. Does not trans
 
 - **AC-1** Input containing「当期純利益」converted across styles → 「当期純利益」appears verbatim in all outputs.
 - **AC-2** Casual Japanese text converted to news or trade-ideas analysis → output contains zero instances of「思います」「感じます」.
-- **AC-3** All RL-4 covered scenes → output states per-field character counts in the verification block, and no field exceeds its hard limit.
-- **AC-4** Per-scene character count format: flash/sns states total (e.g.,「87文字 ✓」); push states title/body (e.g.,「タイトル: 18文字 ✓ / 本文: 55文字 ✓」); banner states main/sub/CTA; edm states subject/preheader/CTA.
+- **AC-3** All RL-4 covered scenes → output states per-field character counts in the verification block. **Hard** fields must not exceed the limit (overflow → revise per compression rules). **Soft** fields may exceed but must be flagged ⚠ with 1-3 短縮候補案; output still classified ⚠ 注記交付.
+- **AC-4** Per-scene character count format: flash/sns states total (e.g.,「87文字 ✓」); push states title/body (e.g.,「タイトル: 18文字 ✓ / 本文: 55文字 ✓」); banner states main/sub/CTA; edm states subject/preheader/CTA. Soft 超過時は「件名: 42文字 ⚠ Soft (≤40 推奨) / 短縮案: …」のように記す。
 - **AC-5** compliance/disclosure output includes「です/ますなし: 確認済み」in the verification block.
 - **AC-6** news or trade-ideas output with bare numerical claims includes a flag:「要出典: [数値]」.
 - **AC-7** campaign output → at least one benefit/incentive claim names a specific detail (amount, period, condition). CTA action verb present (RL-12).
@@ -331,8 +340,11 @@ Run all applicable checks. State results explicitly.
 **compliance/faq + guide:**
 - State「謙譲語II使用: 確認済み」.
 
-**Scenes with hard character limits (RL-4):**
-- Count characters per field. State per-field counts. If any field exceeds its hard limit, apply compression rules from `{style}-guide.md` and recount.
+**Scenes with character limits (RL-4):**
+- Count characters per field. State per-field counts with type tag (Hard/Soft).
+- **Hard 違反**: apply compression rules from `{style}-guide.md` and recount until within limit. Hard 違反のまま交付不可(P0)。
+- **Soft 違反**: ⚠ flag + 短縮候補案 1-3 件を併記。短縮を適用するか否かは編集者判断に委ねる。Soft 違反は P1(注記交付)で配信可能。
+- 例: `件名: 42字 ⚠ Soft (≤40 推奨) / 短縮案: ① ... (32字) ② ... (35字)`
 
 **All styles — sentence length soft check:**
 Average characters per sentence vs. target scene's 句長目標. State「平均X字/文 ✓」or「平均X字/文 — 要確認」.
@@ -359,6 +371,18 @@ If any found → revise. State「語彙漏れなし: ✓」or list items.
 
 If all applicable checks pass → state「自然さ: 問題なし」. If any fail → revise before delivering.
 
+### Step 7 — Delivery Decision
+
+Load `references/delivery-gate.md` at the start of this step. Classify Step 5/6 results into P0 / P1 / P2 / P2-A per the gate spec, run the decision algorithm (max 3 revise loops on P0), and emit the standardized **Delivery Gate** verification block. The block's last line must be one of:
+
+- `Delivery Decision: ✅ 交付可` — P0 全 ✓ / P1 全 ✓ / P2 軽微
+- `Delivery Decision: ⚠ 注記交付` — P0 全 ✓ / P1 のうち N 件は源缺により ⚠ 保留
+- `Delivery Decision: 🛑 交付不可:<P0 ID 列挙>` — P0 未解決(3 周試行後)。`✅` を付けない
+
+P2-A (Attractiveness Proxy) は同時実行し score を表示するが、配信決定には影響しない(score 0/N でも `✅` は出る)。
+
+Gate failure (🛑) means the output is **not** marked delivered — return the best attempt with the violation list, do not append a success label.
+
 ---
 
 ## Output Format
@@ -371,11 +395,14 @@ If all applicable checks pass → state「自然さ: 問題なし」. If any fai
 原文：<original>
 润色：<styled>
 
-検証:
-  [verification results from Step 5]
-  平均X字/文: <✓ or 要確認>
-  場面適合: X/N ✓
-  自然さ: [naturalness note or「問題なし」]
+=== Delivery Gate ===
+[P0] Universal: <results per delivery-gate.md>
+[P0] Style [<style>]: <results>
+[P0] Scene [<scene>]: <results>
+[P1] 条件: <なし or ⚠ entries>
+[P2] 注: <平均字/文 / 語彙漏れ / 文長分布 / 場面適合 / ブランド>
+[P2-A] 吸引力: <per-style attraction proxies> → N/M
+Delivery Decision: <✅ 交付可 | ⚠ 注記交付 | 🛑 交付不可:[IDs]>
 
 改動：[change1] [change2] ...
 ```
@@ -389,9 +416,14 @@ If all applicable checks pass → state「自然さ: 問題なし」. If any fai
 | `references/style-guide.md` | Routing inference table, T1 overview, backward compat | Always — before Step 3 |
 | `references/campaign-guide.md` | campaign T1+T2 constraints, scenes, checkpoints | When `--style campaign` routed |
 | `references/trade-ideas-guide.md` | trade-ideas T1+T2 constraints, scenes, checkpoints | When `--style trade-ideas` routed |
+| `references/trade-ideas-b-expert.md` | trade-ideas Type B(SEO 個別株深掘)sub-form 専用 構造・修辞ベンチマーク(かぶリッジ 22 篇分析、B-1/B-2 章節テンプレート + dual-register 免除条件) | When `--style trade-ideas` routed AND Type B 判定(SEO 媒体・字数 ≥5,000・個別株深掘トーン)(lazy, Step 4 entry) |
+| `references/trade-ideas-r-expert.md` | trade-ideas Type R sub-form 群専用 構造・修辞ベンチマーク(R-1 Market Flash / R-2 Earnings Flash 短型 / **R-2.ext Earnings Flash 中型**(800-2000、bullet 駆動、moomoo Zeber)/ R-3 Morning Brief / R-4 Picks Card / **R-X.E Brand-Bound Earnings Deep-Dive**(4000-10000、表情アイコン分隔、Option 戦略、moomoo Sherry)/ **R-X.T Brand-Bound Theme Deep-Dive**(3500-7000、全文 だ/である、ETF 推奨、moomoo Julie)。v0.2.0 で moomoo 3 篇 verbatim 抽样により R-2.ext / R-X.E / R-X.T を新設、R-1/R-2/R-3/R-4 短型は framework-only) | When `--style trade-ideas` routed AND Type R 判定(短型 ≤500 / 中型 800-2000 brand-bound earnings / 長型 3500-10000 brand-bound deep-dive)(lazy, Step 4 entry) |
 | `references/news-guide.md` | news T1+T2 constraints, scenes, checkpoints | When `--style news` routed |
 | `references/product-guide.md` | product T1+T2 constraints, scenes, checkpoints | When `--style product` routed |
+| `references/product-expert.md` | product 構造・修辞ベンチマーク(zuu/NET MONEY 20 篇分析、3 article types + micro pattern repertoire + P2-A 命中率) | When `--style product` routed (lazy, Step 4 entry) |
 | `references/compliance-guide.md` | compliance T1+T2 constraints, scenes, checkpoints | When `--style compliance` routed |
+| `references/edm-localization-expert.md` | EDM-localization 実証パターン集(LLM 出力 → ネイティブ編集者 polish の 14 系統 pattern + silent baseline + 頻度表)。N=274 real DS→LOC edit pairs(moomoo 証券 JP, 4-person panel, 95 週次バッチ, 2024-04 → 2026-04) | When `--style campaign --scene edm` AND 入力が LLM/機械翻訳の日本語出力(初稿)、または `--style trade-ideas` で配信媒体が EDM の場合(Step 4 Layer 2 末尾、Layer 3 前) |
 | `references/case-library.md` | Brand voice signatures, benchmarks, anti-patterns | When input contains a brand name (Step 3.5) |
 | `references/moomoo-jp-routing.md` | moomoo JP channel ↔ scene ↔ RL-4 limit map (5 T1 sub-tables + segment table + checklist) | When input contains `moomoo` / `moomoo証券` (Step 3 + Step 3.5; load alongside case-library moomoo entry) |
-| `diagnosis/cross-style-quality-rubric.md` | D1–D9 scoring criteria | When evaluating output quality |
+| `references/delivery-gate.md` | P0/P1/P2 severity tiers, per-style gate IDs, decision algorithm, standardized verification block | Conditional — load at Step 7 entry (every output reaches Step 7, so loaded once per invocation but not in the always-loaded Phase 1 bundle) |
+| `diagnosis/cross-style-quality-rubric.md` | D1–D9 scoring criteria (post-hoc evaluation tool, distinct from the delivery gate) | When evaluating output quality |
